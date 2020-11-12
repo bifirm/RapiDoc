@@ -6,5 +6,7 @@ customize their theme. Simply add your css to this file and yarn build.
 */
 
 export default css`
-
+  .m-markdown p:not(:first-child) {
+    margin-block-start: 6px;
+  }
 `;
