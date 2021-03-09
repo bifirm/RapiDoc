@@ -1,16 +1,16 @@
 import { LitElement, html, css } from 'lit-element';
 import marked from 'marked';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html';
-import { schemaInObjectNotation, generateExample } from '@/utils/schema-utils';
-import FontStyles from '@/styles/font-styles';
-import FlexStyles from '@/styles/flex-styles';
-import TableStyles from '@/styles/table-styles';
-import InputStyles from '@/styles/input-styles';
-import TabStyles from '@/styles/tab-styles';
-import BorderStyles from '@/styles/border-styles';
-import CustomStyles from '@/styles/custom-styles';
-import '@/components/schema-tree';
-import '@/components/schema-table';
+import { schemaInObjectNotation, generateExample } from '~/utils/schema-utils';
+import FontStyles from '~/styles/font-styles';
+import FlexStyles from '~/styles/flex-styles';
+import TableStyles from '~/styles/table-styles';
+import InputStyles from '~/styles/input-styles';
+import TabStyles from '~/styles/tab-styles';
+import BorderStyles from '~/styles/border-styles';
+import CustomStyles from '~/styles/custom-styles';
+import '~/components/schema-tree';
+import '~/components/schema-table';
 
 export default class ApiResponse extends LitElement {
   constructor() {
@@ -29,10 +29,11 @@ export default class ApiResponse extends LitElement {
       schemaStyle: { type: String, attribute: 'schema-style' },
       renderStyle: { type: String, attribute: 'render-style' },
       selectedStatus: { type: String, attribute: 'selected-status' },
-      selectedMimeType: { type: String },
+      selectedMimeType: { type: String, attribute: 'selected-mime-type' },
       activeSchemaTab: { type: String, attribute: 'active-schema-tab' },
       schemaExpandLevel: { type: Number, attribute: 'schema-expand-level' },
       schemaDescriptionExpanded: { type: String, attribute: 'schema-description-expanded' },
+      schemaHideWriteOnly: { type: String, attribute: 'schema-hide-write-only' },
     };
   }
 
@@ -89,6 +90,11 @@ export default class ApiResponse extends LitElement {
     `;
   }
 
+  resetSelection() {
+    this.selectedStatus = '';
+    this.selectedMimeType = '';
+  }
+
   /* eslint-disable indent */
   responseTemplate() {
     if (!this.responses) { return ''; }
@@ -111,6 +117,7 @@ export default class ApiResponse extends LitElement {
           mimeRespObj.schema,
           mimeResp,
           true,
+          false,
           mimeResp.includes('json') ? 'json' : 'text',
         );
         allMimeResp[mimeResp] = {
@@ -130,7 +137,7 @@ export default class ApiResponse extends LitElement {
     }
     return html`
       ${Object.keys(this.responses).length > 1
-        ? html`<div class='row'>
+        ? html`<div class='row' style='flex-wrap:wrap'>
           ${Object.keys(this.responses).map((respStatus) => html`
             ${respStatus === '$$ref' // Swagger-Client parser creates '$$ref' object if JSON references are used to create responses - this should be ignored
               ? ''
@@ -291,6 +298,8 @@ export default class ApiResponse extends LitElement {
             .data = '${mimeRespDetails.schemaTree}'
             schema-expand-level = "${this.schemaExpandLevel}"
             schema-description-expanded = "${this.schemaDescriptionExpanded}"
+            schema-hide-read-only = false
+            schema-hide-write-only = ${this.schemaHideWriteOnly}
           > </schema-tree> `
         : html`
           <schema-tree
@@ -299,6 +308,8 @@ export default class ApiResponse extends LitElement {
             .data = '${mimeRespDetails.schemaTree}'
             schema-expand-level = "${this.schemaExpandLevel}"
             schema-description-expanded = "${this.schemaDescriptionExpanded}"
+            schema-hide-read-only = false
+            schema-hide-write-only = ${this.schemaHideWriteOnly}
           > </schema-tree>`
       }`;
   }

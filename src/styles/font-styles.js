@@ -63,7 +63,13 @@ export default css`
     margin-block-end: 0.2em;
   }
   p { margin-block-start: 0.5em; }
-
+  a { color: var(--blue); cursor:pointer; }
+  a.inactive-link { 
+    color:var(--fg);
+    text-decoration: none;
+    cursor:text;
+  }
+  
   code,
   pre {
     margin: 0px;
@@ -137,7 +143,6 @@ export default css`
   }
 
   .m-markdown pre {
-    margin-top: 8px;
     padding: 12px;
     background-color: var(--code-bg);
     color:var(--code-fg);

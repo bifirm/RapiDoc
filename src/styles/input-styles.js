@@ -19,6 +19,7 @@ export default css`
   transition: background-color 0.2s;
   user-select: none;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 }
 .m-btn.primary {
   background-color: var(--primary-color);
@@ -46,8 +47,9 @@ export default css`
 }
 .toolbar-btn{
   cursor: pointer;
-  padding: 2px 0 4px;
+  padding: 4px;
   margin:0 2px;
+  font-size: var(--font-size-small);
   min-width: 50px;
   color: var(--primary-color-invert);
   border-radius: 2px;
@@ -61,6 +63,9 @@ input, textarea, select, button, pre {
   background-color: var(--input-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
+}
+button {
+  font-family: var(--font-regular);
 }
 
 /* Form Inputs */

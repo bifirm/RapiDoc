@@ -55,6 +55,13 @@ export default css`
   display:inline-block;
 }
 
+.xxx-of-descr {
+    font-family: var(--font-regular);
+    color: var(--primary-color);
+    font-size: calc(var(--font-size-small) - 1px);
+    margin-left: 2px;
+}
+
 .stri, .string, .uri, .url, .byte, .bina, .date, .pass, .ipv4, .ipv4, .uuid, .emai, .host {color:var(--green);}
 .inte, .numb, .number, .int6, .int3, .floa, .doub, .deci .blue {color:var(--blue);}
 .null {color:var(--red);}
@@ -71,6 +78,15 @@ export default css`
   cursor:pointer;
   padding:5px 0;
   margin:0 2px;
+}
+.schema-root-type {
+  cursor:auto;
+  color:var(--fg2);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.schema-root-type.xxx-of {
+  display:none;
 }
 .toolbar-item:first-of-type { margin:0 2px 0 0;}
 

@@ -1,4 +1,4 @@
-import { LitElement, css, unsafeCSS } from 'lit-element';
+import { css, LitElement, unsafeCSS } from 'lit-element';
 import marked from 'marked';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-css';
@@ -12,20 +12,22 @@ import 'prismjs/components/prism-http';
 import 'prismjs/components/prism-csharp';
 
 // Styles
-import FontStyles from '@/styles/font-styles';
-import InputStyles from '@/styles/input-styles';
-import FlexStyles from '@/styles/flex-styles';
-import TableStyles from '@/styles/table-styles';
-import EndpointStyles from '@/styles/endpoint-styles';
-import PrismStyles from '@/styles/prism-styles';
-import TabStyles from '@/styles/tab-styles';
-import NavStyles from '@/styles/nav-styles';
-import CustomStyles from '@/styles/custom-styles';
+import FontStyles from '~/styles/font-styles';
+import InputStyles from '~/styles/input-styles';
+import FlexStyles from '~/styles/flex-styles';
+import TableStyles from '~/styles/table-styles';
+import EndpointStyles from '~/styles/endpoint-styles';
+import PrismStyles from '~/styles/prism-styles';
+import TabStyles from '~/styles/tab-styles';
+import NavStyles from '~/styles/nav-styles';
+import InfoStyles from '~/styles/info-styles';
+import CustomStyles from '~/styles/custom-styles';
+// import { expandCollapseNavBarTag } from '@/templates/navbar-template';
 import {
-  pathIsInSearch, invalidCharsRegEx, sleep, rapidocApiKey, advanceSearch,
-} from '@/utils/common-utils';
-import ProcessSpec from '@/utils/spec-parser';
-import mainBodyTemplate from '@/templates/main-body-template';
+  advancedSearch, pathIsInSearch, rapidocApiKey, sleep,
+} from '~/utils/common-utils';
+import ProcessSpec from '~/utils/spec-parser';
+import mainBodyTemplate from '~/templates/main-body-template';
 
 export default class RapiDoc extends LitElement {
   constructor() {
@@ -58,7 +60,11 @@ export default class RapiDoc extends LitElement {
       defaultSchemaTab: { type: String, attribute: 'default-schema-tab' },
       schemaExpandLevel: { type: Number, attribute: 'schema-expand-level' },
       schemaDescriptionExpanded: { type: String, attribute: 'schema-description-expanded' },
+      schemaHideReadOnly: { type: String, attribute: 'schema-hide-read-only' },
+      schemaHideWriteOnly: { type: String, attribute: 'schema-hide-write-only' },
       responseAreaHeight: { type: String, attribute: 'response-area-height' },
+      fillRequestFieldsWithExample: { type: String, attribute: 'fill-request-fields-with-example' },
+      onNavTagClick: { type: String, attribute: 'on-nav-tag-click' },
 
       // API Server
       apiKeyName: { type: String, attribute: 'api-key-name' },
@@ -70,13 +76,14 @@ export default class RapiDoc extends LitElement {
 
       // Hide/Show Sections & Enable Disable actions
       showHeader: { type: String, attribute: 'show-header' },
+      showSideNav: { type: String, attribute: 'show-side-nav' },
       showInfo: { type: String, attribute: 'show-info' },
       allowAuthentication: { type: String, attribute: 'allow-authentication' },
       allowTry: { type: String, attribute: 'allow-try' },
       allowSpecUrlLoad: { type: String, attribute: 'allow-spec-url-load' },
       allowSpecFileLoad: { type: String, attribute: 'allow-spec-file-load' },
       allowSearch: { type: String, attribute: 'allow-search' },
-      allowAdvanceSearch: { type: String, attribute: 'allow-advance-search' },
+      allowAdvancedSearch: { type: String, attribute: 'allow-advanced-search' },
       allowServerSelection: { type: String, attribute: 'allow-server-selection' },
       showComponents: { type: String, attribute: 'show-components' },
 
@@ -107,9 +114,10 @@ export default class RapiDoc extends LitElement {
       matchPaths: { type: String, attribute: 'match-paths' },
 
       // Internal Properties
-      selectedContentId: { type: String },
-      showAdvanceSearchDialog: { type: Boolean },
-      advanceSearchMatches: { type: Object },
+      loading: { type: Boolean }, // indicates spec is being loaded
+      focusedElementId: { type: String }, // updating the focusedElementId will automatically render appropriate section in focused mode
+      showAdvancedSearchDialog: { type: Boolean },
+      advancedSearchMatches: { type: Object },
     };
   }
 
@@ -123,6 +131,7 @@ export default class RapiDoc extends LitElement {
       PrismStyles,
       TabStyles,
       NavStyles,
+      InfoStyles,
       css`
       :host {
         --border-radius: 2px;
@@ -230,7 +239,7 @@ export default class RapiDoc extends LitElement {
         display:none;
       }
       .header-title{
-        font-size:calc(var(--title-font-size) + 8px); 
+        font-size:calc(var(--font-size-regular) + 8px); 
         padding:0 8px;
       }
       .tag.title {
@@ -268,7 +277,11 @@ export default class RapiDoc extends LitElement {
         padding: 6px 0px; 
       }
       .expanded-endpoint-body.deprecated{ filter:opacity(0.6); }
-      .divider { border-top:2px solid var(--primary-color); width:100%; }
+      .divider { 
+        border-top: 2px solid var(--primary-color);
+        margin: 24px 0;
+        width:100%;
+      }
 
       .tooltip {
         cursor:pointer;
@@ -276,17 +289,24 @@ export default class RapiDoc extends LitElement {
         border-left-width: 4px;
         margin-left:2px;
       }
+      .tooltip a {
+        color: var(--fg2);
+        text-decoration: none;
+      }
       .tooltip-text {
         color: var(--fg2);
         background-color: var(--bg2);
         visibility: hidden;
         overflow-wrap: break-word;
       }
-      .tooltip:hover{
+      .tooltip:hover {
         color: var(--primary-color);
         border-color: var(--primary-color);
-
       }
+      .tooltip:hover a:hover {
+        color: var(--primary-color);
+      }
+
       .tooltip:hover .tooltip-text {
         visibility: visible;
         opacity: 1;
@@ -348,12 +368,25 @@ export default class RapiDoc extends LitElement {
     if (!this.defaultSchemaTab || !'example, model,'.includes(`${this.defaultSchemaTab},`)) { this.defaultSchemaTab = 'model'; }
     if (!this.schemaExpandLevel || this.schemaExpandLevel < 1) { this.schemaExpandLevel = 99999; }
     if (!this.schemaDescriptionExpanded || !'true, false,'.includes(`${this.schemaDescriptionExpanded},`)) { this.schemaDescriptionExpanded = 'false'; }
+    const writeMethodsWithBody = ['post', 'put', 'patch'];
+    if (!this.schemaHideReadOnly) {
+      this.schemaHideReadOnly = writeMethodsWithBody;
+    } else if (this.schemaHideReadOnly !== 'never') {
+      this.schemaHideReadOnly = writeMethodsWithBody.filter((value) => this.schemaHideReadOnly.includes(value));
+      if (this.schemaHideReadOnly.length === 0) {
+        this.schemaHideReadOnly = writeMethodsWithBody;
+      }
+    }
+    this.schemaHideReadOnly += ['get', 'head', 'delete', 'options'];
+    this.schemaHideWriteOnly = this.schemaHideWriteOnly !== 'never';
+    if (!this.fillRequestFieldsWithExample || !'true, false,'.includes(`${this.fillRequestFieldsWithExample},`)) { this.fillRequestFieldsWithExample = 'true'; }
+    if (!this.onNavTagClick || !'expand-collapse, show-description,'.includes(`${this.onNavTagClick},`)) { this.onNavTagClick = 'expand-collapse'; }
     if (!this.responseAreaHeight) {
       this.responseAreaHeight = '300px';
     }
 
     if (!this.allowSearch || !'true, false,'.includes(`${this.allowSearch},`)) { this.allowSearch = 'true'; }
-    if (!this.allowAdvanceSearch || !'true, false,'.includes(`${this.allowAdvanceSearch},`)) { this.allowAdvanceSearch = 'true'; }
+    if (!this.allowAdvancedSearch || !'true, false,'.includes(`${this.allowAdvancedSearch},`)) { this.allowAdvancedSearch = 'true'; }
 
     if (!this.allowTry || !'true, false,'.includes(`${this.allowTry},`)) { this.allowTry = 'true'; }
     if (!this.apiKeyValue) { this.apiKeyValue = '-'; }
@@ -368,9 +401,12 @@ export default class RapiDoc extends LitElement {
     if (!this.fontSize || !'default, large, largest,'.includes(`${this.fontSize},`)) { this.fontSize = 'default'; }
 
     if (!this.showInfo || !'true, false,'.includes(`${this.showInfo},`)) { this.showInfo = 'true'; }
+    if (!this.allowServerSelection || !'true, false,'.includes(`${this.allowServerSelection},`)) { this.allowServerSelection = 'true'; }
+    if (!this.allowAuthentication || !'true, false,'.includes(`${this.allowAuthentication},`)) { this.allowAuthentication = 'true'; }
+    if (!this.showSideNav || !'true false'.includes(this.showSideNav)) { this.showSideNav = 'true'; }
     if (!this.showComponents || !'true false'.includes(this.showComponents)) { this.showComponents = 'false'; }
     if (!this.infoDescriptionHeadingsInNavBar || !'true, false,'.includes(`${this.infoDescriptionHeadingsInNavBar},`)) { this.infoDescriptionHeadingsInNavBar = 'false'; }
-    if (!this.showAdvanceSearchDialog) { this.showAdvanceSearchDialog = false; }
+    if (!this.showAdvancedSearchDialog) { this.showAdvancedSearchDialog = false; }
 
     marked.setOptions({
       highlight: (code, lang) => {
@@ -382,11 +418,7 @@ export default class RapiDoc extends LitElement {
     });
 
     window.addEventListener('hashchange', () => {
-      if (this.renderStyle === 'focused') {
-        this.scrollTo(window.location.hash.substring(1));
-      } else {
-        this.scrollTo(window.location.hash.substring(1));
-      }
+      this.scrollTo(window.location.hash.substring(1));
     }, true);
   }
 
@@ -426,9 +458,9 @@ export default class RapiDoc extends LitElement {
         // put it at the end of event-loop to load all the attributes
         window.setTimeout(async () => {
           await this.loadSpec(newVal);
-          // If goto-path is provided then try to scroll there
-          if (this.gotoPath) {
-            this.scrollTo(this.gotoPath.replace(invalidCharsRegEx, '-').toLowerCase());
+          // If goto-path is provided and no location-hash is present then try to scroll there
+          if (this.gotoPath && !window.location.hash) {
+            this.scrollTo(this.gotoPath);
           }
         }, 0);
       }
@@ -523,10 +555,10 @@ export default class RapiDoc extends LitElement {
   }
 
   onSearchChange(e) {
-    this.matchPaths = e.target.value.toLowerCase();
+    this.matchPaths = e.target.value;
     this.resolvedSpec.tags.forEach((tag) => tag.paths.filter((v) => {
       if (this.matchPaths) {
-        v.expanded = false;
+        // v.expanded = false;
         if (pathIsInSearch(this.matchPaths, v)) {
           tag.expanded = true;
         }
@@ -542,8 +574,7 @@ export default class RapiDoc extends LitElement {
   }
 
   onShowSearchModalClicked() {
-    this.showAdvanceSearchDialog = true;
-    this.requestUpdate();
+    this.showAdvancedSearchDialog = true;
   }
 
   // Event Handler on Dialog-Box is opened
@@ -561,11 +592,12 @@ export default class RapiDoc extends LitElement {
     if (!specUrl) {
       return;
     }
-
     this.matchPaths = '';
     try {
+      this.resolvedSpec = null;
       this.loading = true;
       this.loadFailed = false;
+      // this.requestUpdate();
       const spec = await ProcessSpec(
         specUrl,
         this.sortTags === 'true',
@@ -584,7 +616,6 @@ export default class RapiDoc extends LitElement {
       this.loading = false;
       this.loadFailed = true;
       this.resolvedSpec = null;
-      this.requestUpdate();
       console.error(`RapiDoc: Unable to resolve the API spec..  ${err.message}`); // eslint-disable-line no-console
     }
   }
@@ -606,13 +637,6 @@ export default class RapiDoc extends LitElement {
         this.selectedServer = this.resolvedSpec.servers[0];
       }
     }
-    if (this.showInfo === 'true' && !window.location.hash && (this.resolvedSpec.info?.description || this.resolvedSpec.info?.title)) {
-      this.selectedContentId = 'overview';
-    } else if (window.location.hash) {
-      this.selectedContentId = window.location.hash.substring(1).startsWith('overview--') ? 'overview' : window.location.hash.substring(1);
-    } else {
-      this.selectedContentId = `${this.resolvedSpec.tags[0]?.paths[0]?.method}-${this.resolvedSpec.tags[0]?.paths[0]?.path}`;
-    }
     this.requestUpdate();
     const specLoadedEvent = new CustomEvent('spec-loaded', { detail: spec });
     this.dispatchEvent(specLoadedEvent);
@@ -621,49 +645,76 @@ export default class RapiDoc extends LitElement {
     this.intersectionObserver.disconnect();
     if (this.renderStyle === 'read') {
       await sleep(100);
-      this.observeExpandedContent(); // This will auto-highlight the selected nav
-    } else if (this.renderStyle === 'focused') {
-      await sleep(0);
-      const newNavEl = this.shadowRoot.getElementById(`link-${this.selectedContentId}`);
-      if (newNavEl) {
-        newNavEl.classList.add('active');
-        newNavEl.scrollIntoView({ behavior: 'auto', block: 'center' });
-      }
+      this.observeExpandedContent(); // This will auto-highlight the selected nav-item in read-mode
     }
+
     // On first time Spec load, try to navigate to location hash if provided
-    if (window.location.hash) {
-      if (!this.gotoPath) {
-        this.expandTreeToPath(window.location.hash, true, true);
+    const locationHash = window.location.hash?.substring(1);
+    if (locationHash) {
+      if (this.renderStyle === 'view') {
+        this.expandAndGotoOperation(locationHash, true, true);
+      } else if (this.renderStyle === 'focused') {
+        this.scrollTo(locationHash);
       }
+    } else if (this.renderStyle === 'focused') {
+      const defaultElementId = this.showInfo ? 'overview' : this.resolvedSpec.tags[0]?.paths[0];
+      this.scrollTo(defaultElementId);
     }
   }
 
-  expandTreeToPath(pathInput, expandOperation = true, scrollToElement = true) {
+  expandAndGotoOperation(elementId, scrollToElement = true) {
     // Expand full operation and tag
-    if (pathInput.indexOf('#') === 0) pathInput = pathInput.substring(1);
-    let path;
-    this.resolvedSpec.tags.map((tag) => tag.paths.filter((v) => {
-      const method = pathInput.match(new RegExp('(.*?)-'));
-      const methodType = (method && method.length === 2) ? method[1] : null;
-      path = pathInput.match(new RegExp('/.*$'));
-      const pathValue = (path && path.length === 1) ? path[0] : null;
-
-      if (methodType && pathValue && methodType === v.method && pathValue === v.path) {
-        this.selectedContentId = `${methodType}-${pathValue}`;
-        v.expanded = expandOperation;
-        tag.expanded = true;
+    let isExpandingNeeded = true;
+    const tmpElementId = elementId.indexOf('#') === -1 ? elementId : elementId.substring(1);
+    if (tmpElementId.startsWith('overview') || tmpElementId === 'servers' || tmpElementId === 'auth') {
+      isExpandingNeeded = false;
+    } else {
+      for (let i = 0; i < this.resolvedSpec.tags?.length; i++) {
+        const tag = this.resolvedSpec.tags[i];
+        const path = tag.paths?.find((p) => p.elementId === elementId);
+        if (path) {
+          if (path.expanded && tag.expanded) {
+            isExpandingNeeded = false;
+          } else {
+            path.expanded = true;
+            tag.expanded = true;
+          }
+        }
       }
-    }));
-    this.requestUpdate();
+    }
     if (scrollToElement) {
-      // delay required, else we cant find element
+      // requestUpdate() and delay required, else we cant find element
+      if (isExpandingNeeded) {
+        this.requestUpdate();
+      }
       window.setTimeout(() => {
-        const gotoEl = this.shadowRoot.getElementById(pathInput);
+        const gotoEl = this.shadowRoot.getElementById(tmpElementId);
         if (gotoEl) {
           gotoEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+          window.history.replaceState(null, null, `#${tmpElementId}`);
         }
-      }, 150);
+      }, isExpandingNeeded ? 150 : 0);
     }
+  }
+
+  isValidTopId(id) {
+    return (id.startsWith('overview') || id === 'servers' || id === 'auth');
+  }
+
+  isValidPathId(id) {
+    if (id === 'overview' && this.showInfo) {
+      return true;
+    }
+    if (id === 'servers' && this.allowServerSelection) {
+      return true;
+    }
+    if (id === 'auth' && this.allowAuthentication) {
+      return true;
+    }
+    if (id.startsWith('tag--')) {
+      return this.resolvedSpec.tags?.find((tag) => tag.elementId === id);
+    }
+    return this.resolvedSpec.tags?.find((tag) => tag.paths.find((path) => path.elementId === id));
   }
 
   onIntersect(entries) {
@@ -689,32 +740,6 @@ export default class RapiDoc extends LitElement {
     });
   }
 
-  // Called by onClick of Left-Navigation Bar items
-  async scrollToEl(e) {
-    const navEl = e.currentTarget;
-    if (!navEl.id || !navEl.dataset.contentId || !navEl.id.startsWith('link-')) {
-      return;
-    }
-    this.selectedContentId = navEl.dataset.contentId.startsWith('overview--') ? 'overview' : navEl.dataset.contentId;
-    const targetElId = navEl.dataset.contentId;
-    await sleep(0); // important - else contentEl will be null
-    const contentEl = this.shadowRoot.getElementById(targetElId);
-    if (contentEl) {
-      // Disable IntersectionObserver before scrolling into the view, else it will try to scroll the navbar which is not needed here
-      this.isIntersectionObserverActive = false;
-      contentEl.scrollIntoView({ behavior: 'auto', block: 'start' });
-      const oldNavEl = this.shadowRoot.querySelector('.nav-bar-tag.active, .nav-bar-path.active, .nav-bar-info.active, .nav-bar-h1.active, .nav-bar-h2.active');
-      if (oldNavEl) {
-        oldNavEl.classList.remove('active');
-      }
-      navEl.classList.add('active');
-      window.history.replaceState(null, null, `${window.location.href.split('#')[0]}#${targetElId}`);
-      setTimeout(() => {
-        this.isIntersectionObserverActive = true;
-      }, 300);
-    }
-  }
-
   // Called by anchor tags created using markdown
   handleHref(e) {
     if (e.target.tagName.toLowerCase() === 'a') {
@@ -727,28 +752,88 @@ export default class RapiDoc extends LitElement {
     }
   }
 
+  /**
+   * Called by
+   *  - onClick of Navigation Bar
+   *  - onClick of Advanced Search items
+   *
+   * Functionality:
+   *  1. First deactivate IntersectionObserver
+   *  2. Scroll to the element
+   *  3. Activate IntersectionObserver (after little delay)
+   *
+  */
+  async scrollToEventTarget(event, scrollNavItemToView = true) {
+    const navEl = event.currentTarget;
+    if (!navEl.dataset.contentId) {
+      return;
+    }
+    this.isIntersectionObserverActive = false;
+    this.scrollTo(navEl.dataset.contentId, true, scrollNavItemToView);
+    setTimeout(() => {
+      this.isIntersectionObserverActive = true;
+    }, 300);
+  }
+
   // Public Method (scrolls to a given path and highlights the left-nav selection)
-  async scrollTo(path, expandPath = true) {
-    this.selectedContentId = path.startsWith('overview--') ? 'overview' : path;
-    await sleep(0);
-    const gotoEl = this.shadowRoot.getElementById(path);
-    if (gotoEl) {
-      this.expandTreeToPath(path, expandPath, true);
-      const oldNavEl = this.shadowRoot.querySelector('.nav-bar-tag.active, .nav-bar-path.active, .nav-bar-info.active, .nav-bar-h1.active, .nav-bar-h2.active');
-      const newNavEl = this.shadowRoot.getElementById(`link-${path}`);
-      if (oldNavEl) {
-        oldNavEl.classList.remove('active');
+  async scrollTo(elementId, expandPath = true, scrollNavItemToView = true) {
+    if (this.renderStyle === 'focused') {
+      // for focused mode update this.focusedElementId to update the rendering, else it wont find the needed html elements
+      // focusedElementId will get validated in the template
+      this.focusedElementId = elementId;
+      await sleep(0);
+    }
+    if (this.renderStyle === 'view') {
+      this.expandAndGotoOperation(elementId, expandPath, true);
+    } else {
+      let isValidElementId = false;
+      const contentEl = this.shadowRoot.getElementById(elementId);
+      if (contentEl) {
+        isValidElementId = true;
+        // ScrollIntoView is needed for read-mode and overview and tag section in focused-mode
+        if (this.renderStyle === 'read' || elementId.startsWith('overview') || elementId.startsWith('tag--')) {
+          contentEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      } else {
+        isValidElementId = false;
       }
-      if (newNavEl) {
-        newNavEl.classList.add('active');
-        newNavEl.scrollIntoView({ behavior: 'auto', block: 'center' });
-        this.requestUpdate();
+      if (isValidElementId) {
+        // for focused style it is important to reset request-body-selection and response selection which maintains the state for in case of multiple req-body or multiple response mime-type
+        if (this.renderStyle === 'focused') {
+          const requestEl = this.shadowRoot.querySelector('api-request');
+          if (requestEl) {
+            requestEl.resetRequestBodySelection();
+          }
+          const responseEl = this.shadowRoot.querySelector('api-response');
+          if (responseEl) {
+            responseEl.resetSelection();
+          }
+        }
+
+        // Update Location Hash
+        window.history.replaceState(null, null, `#${elementId}`);
+
+        // Update NavBar View and Styles
+        const newNavEl = this.shadowRoot.getElementById(`link-${elementId}`);
+
+        if (newNavEl) {
+          if (scrollNavItemToView) {
+            newNavEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+          }
+          await sleep(0);
+          const oldNavEl = this.shadowRoot.querySelector('.nav-bar-tag.active, .nav-bar-path.active, .nav-bar-info.active, .nav-bar-h1.active, .nav-bar-h2.active');
+          if (oldNavEl) {
+            oldNavEl.classList.remove('active');
+          }
+          newNavEl.classList.add('active'); // must add the class after scrolling
+          // this.requestUpdate();
+        }
       }
     }
   }
 
-  // Event handler for Advance Search text-inputs and checkboxes
-  onAdvanceSearch(ev, delay) {
+  // Event handler for Advanced Search text-inputs and checkboxes
+  onAdvancedSearch(ev, delay) {
     const eventTargetEl = ev.target;
     clearTimeout(this.timeoutId);
     this.timeoutId = setTimeout(() => {
@@ -756,12 +841,10 @@ export default class RapiDoc extends LitElement {
       if (eventTargetEl.type === 'text') {
         searchInputEl = eventTargetEl;
       } else {
-        searchInputEl = eventTargetEl.closest('.advance-search-options').querySelector('input[type=text]');
+        searchInputEl = eventTargetEl.closest('.advanced-search-options').querySelector('input[type=text]');
       }
-      const searcOptions = [...eventTargetEl.closest('.advance-search-options').querySelectorAll('input:checked')].map((v) => v.id);
-      this.advanceSearchMatches = advanceSearch(searchInputEl.value, this.resolvedSpec.tags, searcOptions);
-      this.requestUpdate();
-      // console.log('the ptint %o', targetEl);
+      const searcOptions = [...eventTargetEl.closest('.advanced-search-options').querySelectorAll('input:checked')].map((v) => v.id);
+      this.advancedSearchMatches = advancedSearch(searchInputEl.value, this.resolvedSpec.tags, searcOptions);
     }, delay);
   }
 }

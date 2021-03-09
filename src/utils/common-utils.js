@@ -10,7 +10,7 @@ export function debounce(fn, delay) {
   };
 }
 
-export const invalidCharsRegEx = new RegExp(/[\s#:?&={}]/, 'g');
+export const invalidCharsRegEx = new RegExp(/[\s#:?&={}]/, 'g'); // used for generating valid html element ids by replacing the invalid chars with hyphen (-)
 export const rapidocApiKey = '_rapidoc_api_key';
 
 export function sleep(ms) {
@@ -50,7 +50,7 @@ export async function wait(ms) {
 
 export function pathIsInSearch(searchVal, path) {
   const stringToSearch = `${path.method} ${path.path} ${path.summary || path.description || ''} ${path.operationId || ''}`.toLowerCase();
-  return stringToSearch.includes(searchVal);
+  return stringToSearch.includes(searchVal.toLowerCase());
 }
 
 export function schemaKeys(schemaProps, result = new Set()) {
@@ -68,7 +68,7 @@ export function schemaKeys(schemaProps, result = new Set()) {
   return result;
 }
 
-export function advanceSearch(searchVal, allSpecTags, searchOptions = []) {
+export function advancedSearch(searchVal, allSpecTags, searchOptions = []) {
   if (!searchVal.trim() || searchOptions.length === 0) {
     return;
   }
@@ -103,6 +103,7 @@ export function advanceSearch(searchVal, allSpecTags, searchOptions = []) {
 
       if (stringToSearch.toLowerCase().includes(searchVal.trim().toLowerCase())) {
         pathsMatched.push({
+          elementId: path.elementId,
           method: path.method,
           path: path.path,
           summary: path.summary || path.description || '',
@@ -113,3 +114,29 @@ export function advanceSearch(searchVal, allSpecTags, searchOptions = []) {
   });
   return pathsMatched;
 }
+
+export function prettyXml(sourceXmlString) {
+  const xmlDoc = new DOMParser().parseFromString(sourceXmlString, 'text/xml');
+  const xsltDoc = new DOMParser().parseFromString([
+    // describes how we want to modify the XML - indent everything
+    `<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+      <xsl:strip-space elements="*"/>
+        <xsl:template match="para[content-style][not(text())]">
+          <xsl:value-of select="normalize-space(.)"/>
+        </xsl:template>
+        <xsl:template match="node()|@*">
+          <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>
+        </xsl:template>
+        <xsl:output indent="yes"/>
+      </xsl:stylesheet>`,
+  ].join('\n'), 'application/xml');
+  const xsltProcessor = new XSLTProcessor();
+  xsltProcessor.importStylesheet(xsltDoc);
+  const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+  return new XMLSerializer().serializeToString(resultDoc);
+}
+/*
+export function hasValidPathInUrlHash(tags) {
+  return tags.find((tag) => tag.paths.find((path) => window.location.hash.substring(1) === path.elementId));
+}
+*/

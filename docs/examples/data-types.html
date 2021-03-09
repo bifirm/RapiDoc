@@ -1,4 +1,5 @@
 <!doctype html>
+<html>
   <head>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src='https://www.googletagmanager.com/gtag/js?id=UA-132775238-1'></script>
@@ -22,7 +23,7 @@
       show-info = "false"
       show-header = "false"
       render-style = "read"
-      allow-try = "false" 
+      allow-try = "true" 
       regular-font = 'Open Sans'
       mono-font = "Roboto Mono"
     > 
@@ -32,6 +33,12 @@
         <div style="display: flex;justify-content: center; margin: 2px 0">
           <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('allow-try', 'true')" >Yes</button>
           <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('allow-try', 'false')" >No</button>
+        </div>
+
+        <div style="text-align: center; padding: 20px 0 12px 0; color:#47AFE8"> Schema Style</div>
+        <div style="display: flex;justify-content: center; margin: 2px 0">
+          <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('schema-style', 'table')" >Table</button>
+          <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('schema-style', 'tree')" >Tree</button>
         </div>
       </div>
     </div>

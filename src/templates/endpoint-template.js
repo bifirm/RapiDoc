@@ -1,32 +1,48 @@
 import { html } from 'lit-element';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html';
 import marked from 'marked';
-import '@/components/api-request';
-import '@/components/api-response';
-import codeSamplesTemplate from '@/templates/code-samples-template';
-import callbackTemplate from '@/templates/callback-template';
-import { pathSecurityTemplate } from '@/templates/security-scheme-template';
-import { pathIsInSearch, invalidCharsRegEx, rapidocApiKey } from '@/utils/common-utils';
+import '~/components/api-request';
+import '~/components/api-response';
+import codeSamplesTemplate from '~/templates/code-samples-template';
+import callbackTemplate from '~/templates/callback-template';
+import { pathSecurityTemplate } from '~/templates/security-scheme-template';
+import { pathIsInSearch, rapidocApiKey } from '~/utils/common-utils';
 
-/* eslint-disable indent */
 function toggleExpand(path) {
   if (path.expanded) {
     path.expanded = false; // collapse
     window.history.replaceState(null, null, `${window.location.href.split('#')[0]}`);
   } else {
     path.expanded = true; // Expand
-    const newHash = `#${path.method}-${path.path.replace(invalidCharsRegEx, '-')}`;
-    const currentHash = window.location.hash;
-    if (currentHash !== newHash) {
+    const newHash = `#${path.elementId}`;
+    if (window.location.hash !== newHash) {
       window.history.replaceState(null, null, `${window.location.href.split('#')[0]}${newHash}`);
     }
   }
   this.requestUpdate();
 }
 
+export function expandCollapseAll(operationsRootEl, action = 'expand-all') {
+  const elList = [...operationsRootEl.querySelectorAll('.section-tag')];
+  if (action === 'expand-all') {
+    elList.map((el) => {
+      el.classList.replace('collapsed', 'expanded');
+    });
+  } else {
+    elList.map((el) => {
+      el.classList.replace('expanded', 'collapsed');
+    });
+  }
+}
+
+function onExpandCollapseAll(e, action = 'expand-all') {
+  expandCollapseAll.call(this, e.target.closest('.operations-root'), action);
+}
+
+/* eslint-disable indent */
 function endpointHeadTemplate(path) {
   return html`
-  <div @click="${(e) => { toggleExpand.call(this, path, e); }}" class='endpoint-head ${path.method} ${path.deprecated ? 'deprecated' : ''} ${path.expanded ? 'expanded' : 'collapsed'}'>
+  <summary @click="${(e) => { toggleExpand.call(this, path, e); }}" class='endpoint-head ${path.method} ${path.deprecated ? 'deprecated' : ''} ${path.expanded ? 'expanded' : 'collapsed'}'>
     <div class="method ${path.method} ${path.deprecated ? 'deprecated' : ''}"> ${path.method} </div> 
     <div class="path ${path.deprecated ? 'deprecated' : ''}"> 
       ${path.path} 
@@ -39,8 +55,8 @@ function endpointHeadTemplate(path) {
       : ''
     }
     <div class="only-large-screen" style="min-width:60px; flex:1"></div>
-    <div class="m-markdown-small descr"> ${unsafeHTML(marked(path.summary || ''))} </div>
-  </div>
+    <div class="descr">${path.summary || path.shortSummary} </div>
+  </summary>
   `;
 }
 
@@ -64,8 +80,9 @@ function endpointBodyTemplate(path) {
   const codeSampleTabPanel = path.xCodeSamples ? codeSamplesTemplate(path.xCodeSamples) : '';
   return html`
   <div class='endpoint-body ${path.method} ${path.deprecated ? 'deprecated' : ''}'>
+    <slot name="${path.elementId}"></slot>
     <div class="summary">
-      ${path.summary && path.summary !== path.description ? html`<div class="title">${path.summary}</div>` : ''}
+      ${path.summary ? html`<div class="title">${path.summary}<div>` : path.shortSummary !== path.description ? html`<div class="title">${path.shortSummary}</div>` : ''}
       ${path.description ? html`<div class="m-markdown"> ${unsafeHTML(marked(path.description))}</div>` : ''}
       ${pathSecurityTemplate.call(this, path.security)}
       ${codeSampleTabPanel}
@@ -80,13 +97,15 @@ function endpointBodyTemplate(path) {
         .api_keys = "${nonEmptyApiKeys}"
         .servers = "${path.servers}" 
         server-url = "${path.servers && path.servers.length > 0 ? path.servers[0].url : this.selectedServer.computedUrl}" 
-        active-schema-tab = "${this.defaultSchemaTab}" 
+        active-schema-tab = "${this.defaultSchemaTab}"
+        fill-request-fields-with-example = "${this.fillRequestFieldsWithExample}"
         allow-try = "${this.allowTry}"
         accept = "${accept}"
         render-style="${this.renderStyle}" 
         schema-style = "${this.schemaStyle}" 
         schema-expand-level = "${this.schemaExpandLevel}"
         schema-description-expanded = "${this.schemaDescriptionExpanded}"
+        schema-hide-read-only = "${this.schemaHideReadOnly}"
       > 
         ${path.callbacks ? callbackTemplate.call(this, path.callbacks) : ''}
       </api-request>
@@ -98,6 +117,7 @@ function endpointBodyTemplate(path) {
         schema-style="${this.schemaStyle}"
         schema-expand-level = "${this.schemaExpandLevel}"
         schema-description-expanded = "${this.schemaDescriptionExpanded}"
+        schema-hide-write-only = "${this.schemaHideWriteOnly}"
         selected-status = "${Object.keys(path.responses || {})[0] || ''}"
       > </api-response>
     </div>
@@ -106,13 +126,24 @@ function endpointBodyTemplate(path) {
 
 export default function endpointTemplate() {
   return html`
+    <div style="display:flex; justify-content:flex-end;"> 
+      <span @click="${(e) => onExpandCollapseAll(e, 'expand-all')}" style="color:var(--primary-color); cursor:pointer;">
+        Expand all
+      </span> 
+      &nbsp;|&nbsp; 
+      <span @click="${(e) => onExpandCollapseAll(e, 'collapse-all')}" style="color:var(--primary-color); cursor:pointer;" >
+        Collapse all
+      </span> 
+      &nbsp; sections
+    </div>
     ${this.resolvedSpec.tags.map((tag) => html`
     <div class='regular-font section-gap section-tag ${tag.expanded ? 'expanded' : 'collapsed'}' > 
     
       <div class='section-tag-header' @click="${() => { tag.expanded = !tag.expanded; this.requestUpdate(); }}">
-        <div id='${tag.name.replace(invalidCharsRegEx, '-')}' class="sub-title tag" style="color:var(--primary-color)">${tag.name}</div>
+        <div id='${tag.elementId}' class="sub-title tag" style="color:var(--primary-color)">${tag.name}</div>
       </div>
       <div class='section-tag-body'>
+        <slot name="${tag.elementId}"></slot>
         <div class="regular-font regular-font-size m-markdown" style="padding-bottom:12px">
           ${unsafeHTML(marked(tag.description || ''))}
         </div>
@@ -122,10 +153,10 @@ export default function endpointTemplate() {
           }
           return true;
           }).map((path) => html`
-          <div id='${path.method}-${path.path.replace(invalidCharsRegEx, '-')}' class='m-endpoint regular-font ${path.method} ${path.expanded ? 'expanded' : 'collapsed'}'>
+          <section id='${path.elementId}' class='m-endpoint regular-font ${path.method} ${path.expanded ? 'expanded' : 'collapsed'}'>
             ${endpointHeadTemplate.call(this, path)}      
             ${path.expanded ? endpointBodyTemplate.call(this, path) : ''}
-          </div>`)
+          </section>`)
         }
       </div>
     </div>
