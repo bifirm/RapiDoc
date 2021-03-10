@@ -37,7 +37,6 @@ function onExpandCollapseAll(e, action = 'expand-all') {
 
 /* eslint-disable indent */
 export default function navbarTemplate() {
-  console.log('navbarTemplate', { showInfo:this.showInfo, info: this.resolvedSpec.info, infoExtensionsHeaders: this.resolvedSpec.infoExtensionsHeaders, infoDescriptionHeadingsInNavBar:this.infoDescriptionHeadingsInNavBar === 'true'})
   return html`
   <nav class='nav-bar ${this.renderStyle}' >
     <div style="padding:16px 30px 0 16px;">
@@ -199,7 +198,7 @@ export default function navbarTemplate() {
           </div>
         `)
       }
-      
+
       <!-- EXTENSIONS -->
       ${(this.showInfo && this.resolvedSpec.info && this.resolvedSpec.infoExtensionsHeaders.length > 0) ? html`
         ${this.resolvedSpec.infoExtensionsHeaders.map(extension => 
