@@ -4,7 +4,7 @@ import { html } from 'lit-element';
 import expandedEndpointTemplate from '~/templates/expanded-endpoint-template';
 import focusedEndpointTemplate from '~/templates/focused-endpoint-template';
 import overviewTemplate from '~/templates/overview-template';
-import extensionsTemplate from '~/templates/extensions-template';
+import { extensionsTemplates } from '~/templates/extensions-template';
 import endpointTemplate from '~/templates/endpoint-template';
 import serverTemplate from '~/templates/server-template';
 import securitySchemeTemplate from '~/templates/security-scheme-template';
@@ -70,7 +70,7 @@ export default function mainBodyTemplate() {
                         ? expandedEndpointTemplate.call(this)
                         : endpointTemplate.call(this)
                       }
-                      ${this.showInfo === 'true' ? extensionsTemplate.call(this)  : ''}
+                      ${this.showInfo === 'true' ? extensionsTemplates.call(this)  : ''}
                     `
                   }
                   </div>

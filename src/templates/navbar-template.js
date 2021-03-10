@@ -210,6 +210,7 @@ export default function navbarTemplate() {
                 </div>      
                 <div class="extensions-headers">
                   <div class="${extension.name}-headers">
+                    ${extension.headers.length == 0 ? html`<div id="link-${extension.name}" class='nav-bar-h1' data-content-id='${extension.name}' @click = '${(e) => this.scrollToEventTarget(e, false)}'>${extension.name.replace('x-', '').toUpperCase()}</div>`:''}
                     ${extension.headers.map((header) => html`
                       <div 
                         class='nav-bar-h${header.depth}' 
@@ -221,7 +222,7 @@ export default function navbarTemplate() {
                       </div>`)
                     }
                   </div>
-                  ${extension.headers.length > 0 ? html`<hr style='border-top: 1px solid var(--nav-hover-bg-color); border-width:1px 0 0 0; margin: 15px 0 0 0'/>` : ''}
+                  ${extension.headers.length > 1 ? html`<hr style='border-top: 1px solid var(--nav-hover-bg-color); border-width:1px 0 0 0; margin: 15px 0 0 0'/>` : ''}
                 </div>
               `
               : html`<div class='nav-bar-info'  id='link-${extension.name}' data-content-id='${extension.name}' @click = '${(e) => this.scrollToEventTarget(e, false)}'> ${extension.name.replace('x-', '')} </div>`

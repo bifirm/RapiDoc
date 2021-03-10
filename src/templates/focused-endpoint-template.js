@@ -6,6 +6,7 @@ import '~/components/api-request';
 import '~/components/api-response';
 import componentsTemplate from '~/templates/components-template';
 import overviewTemplate from '~/templates/overview-template';
+import { extensionTemplate } from '~/templates/extensions-template';
 import serverTemplate from '~/templates/server-template';
 import securitySchemeTemplate from '~/templates/security-scheme-template';
 import { expandCollapseNavBarTag } from '~/templates/navbar-template';
@@ -79,6 +80,9 @@ export default function focusedEndpointTemplate() {
     } else {
       focusedTemplate = defaultContentTemplate.call(this);
     }
+  } else if (focusElId.startsWith('x-') && this.showInfo === 'true') {
+    const idToFocus = focusElId.indexOf('--', 4) > 0 ? focusElId.substring(0, focusElId.indexOf('--', 5)) : focusElId;
+    focusedTemplate = extensionTemplate.call(this, idToFocus);
   } else {
     for (i = 0; i < this.resolvedSpec.tags.length; i += 1) {
       selectedTagObj = this.resolvedSpec.tags[i];
