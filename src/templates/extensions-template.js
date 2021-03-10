@@ -10,7 +10,7 @@ function headingRenderer(extension) {
 }
 
 export function extensionsTemplates() {
-  const extensions = listExtensions(this.resolvedSpec);
+  const extensions = this.resolvedSpec.extensions;
   return html`${extensions.map(extension => extensionTemplate.call(this, extension))}`;
 }
 
@@ -19,13 +19,13 @@ export function extensionTemplate(extension) {
     return ''
   
   if (typeof extension === "string") {
-    const extensions = listExtensions(this.resolvedSpec)
-    const filtered = extensions.filter(e => e.name === extension)
+    const filtered = this.resolvedSpec.extensions.filter(e => e.name === extension)
     if (filtered.length > 0)
       extension = filtered[0]
     else
       return ''
   }
+
   return html`
     <section id="${extension.name}"
       class="observe-me ${this.renderStyle === 'view' ? 'section-gap' : 'section-gap--read-mode'}">
@@ -42,24 +42,4 @@ export function extensionTemplate(extension) {
     </section>
     `;
 }
-
-export function listExtensions(resolvedSpec) {
-  let extensions = [];
-  for (const key in resolvedSpec?.info) {
-    if (!key.startsWith('x-'))
-      continue;
-    const value = resolvedSpec.info[key]
-    if (!value || typeof value !== "string")
-      continue;
-    extensions.push({ name: key, description: value, headers: getHeadersFromMarkdown(value) })
-  }
-  return extensions;
-}
-
-function getHeadersFromMarkdown(markdownContent) {
-  const tokens = marked.lexer(markdownContent);
-  const headers = tokens.filter((v) => v.type === 'heading' && v.depth <= 2);
-  return headers || [];
-}
-
 /* eslint-enable indent */

@@ -200,8 +200,8 @@ export default function navbarTemplate() {
       }
 
       <!-- EXTENSIONS -->
-      ${(this.showInfo && this.resolvedSpec.info && this.resolvedSpec.infoExtensionsHeaders.length > 0) ? html`
-        ${this.resolvedSpec.infoExtensionsHeaders.map(extension => 
+      ${(this.showInfo && this.resolvedSpec.info && this.resolvedSpec.extensions.length > 0) ? html`
+        ${this.resolvedSpec.extensions.map(extension => 
           (this.infoDescriptionHeadingsInNavBar === 'true')
               ? html`
                 <div class='nav-bar-section'>

@@ -2,7 +2,6 @@
 import OpenApiParser from '@apitools/openapi-parser';
 import marked from 'marked';
 import { invalidCharsRegEx, rapidocApiKey } from '~/utils/common-utils';
-import { listExtensions } from '~/templates/extensions-template';
 
 export default async function ProcessSpec(specUrl, sortTags = false, sortEndpointsBy = '', attrApiKey = '', attrApiKeyLocation = '', attrApiKeyValue = '', serverUrl = '') {
   let jsonParsedSpec;
@@ -25,7 +24,7 @@ export default async function ProcessSpec(specUrl, sortTags = false, sortEndpoin
 
   const components = getComponents(jsonParsedSpec);
   const infoDescriptionHeaders = jsonParsedSpec.info?.description ? getHeadersFromMarkdown(jsonParsedSpec.info.description) : [];
-  const infoExtensionsHeaders = listExtensions(jsonParsedSpec).map(extension => { return { name: extension.name, headers: getHeadersFromMarkdown(extension.description) } } );
+  const extensions = resolveExtensions(jsonParsedSpec);
 
   // Security Scheme
   const securitySchemes = [];
@@ -110,7 +109,7 @@ export default async function ProcessSpec(specUrl, sortTags = false, sortEndpoin
   const parsedSpec = {
     info: jsonParsedSpec.info,
     infoDescriptionHeaders,
-    infoExtensionsHeaders,
+    extensions,
     tags,
     components,
     // pathGroups,
@@ -119,6 +118,21 @@ export default async function ProcessSpec(specUrl, sortTags = false, sortEndpoin
     servers,
   };
   return parsedSpec;
+}
+
+function resolveExtensions(resolvedSpec) {
+  if (!resolvedSpec?.info)
+    return [];
+  let extensions = [];
+  for (const key in resolvedSpec?.info) {
+    if (!key.startsWith('x-'))
+      continue;
+    const value = resolvedSpec.info[key]
+    if (!value || typeof value !== "string")
+      continue;
+    extensions.push({ name: key, description: value, headers: getHeadersFromMarkdown(value) })
+  }
+  return extensions;
 }
 
 function getHeadersFromMarkdown(markdownContent) {
