@@ -2,6 +2,7 @@
 import OpenApiParser from '@apitools/openapi-parser';
 import marked from 'marked';
 import { invalidCharsRegEx, rapidocApiKey } from '~/utils/common-utils';
+import { listExtensions } from '~/templates/extensions-template';
 
 export default async function ProcessSpec(specUrl, sortTags = false, sortEndpointsBy = '', attrApiKey = '', attrApiKeyLocation = '', attrApiKeyValue = '', serverUrl = '') {
   let jsonParsedSpec;
@@ -24,6 +25,7 @@ export default async function ProcessSpec(specUrl, sortTags = false, sortEndpoin
 
   const components = getComponents(jsonParsedSpec);
   const infoDescriptionHeaders = jsonParsedSpec.info?.description ? getHeadersFromMarkdown(jsonParsedSpec.info.description) : [];
+  const infoExtensionsHeaders = listExtensions(jsonParsedSpec).map(extension => { return { name: extension.name, headers: getHeadersFromMarkdown(extension.description) } } );
 
   // Security Scheme
   const securitySchemes = [];
@@ -108,6 +110,7 @@ export default async function ProcessSpec(specUrl, sortTags = false, sortEndpoin
   const parsedSpec = {
     info: jsonParsedSpec.info,
     infoDescriptionHeaders,
+    infoExtensionsHeaders,
     tags,
     components,
     // pathGroups,

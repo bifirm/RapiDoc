@@ -37,6 +37,7 @@ function onExpandCollapseAll(e, action = 'expand-all') {
 
 /* eslint-disable indent */
 export default function navbarTemplate() {
+  console.log('navbarTemplate', { showInfo:this.showInfo, info: this.resolvedSpec.info, infoExtensionsHeaders: this.resolvedSpec.infoExtensionsHeaders, infoDescriptionHeadingsInNavBar:this.infoDescriptionHeadingsInNavBar === 'true'})
   return html`
   <nav class='nav-bar ${this.renderStyle}' >
     <div style="padding:16px 30px 0 16px;">
@@ -198,6 +199,35 @@ export default function navbarTemplate() {
           </div>
         `)
       }
+      
+      <!-- EXTENSIONS -->
+      ${(this.showInfo && this.resolvedSpec.info && this.resolvedSpec.infoExtensionsHeaders.length > 0) ? html`
+        ${this.resolvedSpec.infoExtensionsHeaders.map(extension => 
+          (this.infoDescriptionHeadingsInNavBar === 'true')
+              ? html`
+                <div class='nav-bar-section'>
+                  <div style="display:flex; margin-left:10px;"></div>
+                  <div class='nav-bar-section-title' style="cursor: pointer;" data-content-id='${extension.name}' @click = '${(e) => this.scrollToEventTarget(e, false)}'> ${extension.name.replace('x-', '').toUpperCase()} </div>
+                </div>      
+                <div class="extensions-headers">
+                  <div class="${extension.name}-headers">
+                    ${extension.headers.map((header) => html`
+                      <div 
+                        class='nav-bar-h${header.depth}' 
+                        id="link-${extension.name}--${new marked.Slugger().slug(header.text)}"  
+                        data-content-id='${extension.name}--${new marked.Slugger().slug(header.text)}' 
+                        @click='${(e) => this.scrollToEventTarget(e, false)}'
+                      >
+                        ${header.text}
+                      </div>`)
+                    }
+                  </div>
+                  ${extension.headers.length > 0 ? html`<hr style='border-top: 1px solid var(--nav-hover-bg-color); border-width:1px 0 0 0; margin: 15px 0 0 0'/>` : ''}
+                </div>
+              `
+              : html`<div class='nav-bar-info'  id='link-${extension.name}' data-content-id='${extension.name}' @click = '${(e) => this.scrollToEventTarget(e, false)}'> ${extension.name.replace('x-', '')} </div>`
+        )}    
+      `:''}
 
     <!-- COMPONENTS -->
     ${(this.showComponents === 'false' || !this.resolvedSpec.components)
