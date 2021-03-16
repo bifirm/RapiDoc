@@ -56,15 +56,17 @@ export default class RapiDoc extends LitElement {
       // UI Layouts
       layout: { type: String },
       renderStyle: { type: String, attribute: 'render-style' },
-      schemaStyle: { type: String, attribute: 'schema-style' },
       defaultSchemaTab: { type: String, attribute: 'default-schema-tab' },
+      responseAreaHeight: { type: String, attribute: 'response-area-height' },
+      fillRequestFieldsWithExample: { type: String, attribute: 'fill-request-fields-with-example' },
+      onNavTagClick: { type: String, attribute: 'on-nav-tag-click' },
+
+      // Schema Styles
+      schemaStyle: { type: String, attribute: 'schema-style' },
       schemaExpandLevel: { type: Number, attribute: 'schema-expand-level' },
       schemaDescriptionExpanded: { type: String, attribute: 'schema-description-expanded' },
       schemaHideReadOnly: { type: String, attribute: 'schema-hide-read-only' },
       schemaHideWriteOnly: { type: String, attribute: 'schema-hide-write-only' },
-      responseAreaHeight: { type: String, attribute: 'response-area-height' },
-      fillRequestFieldsWithExample: { type: String, attribute: 'fill-request-fields-with-example' },
-      onNavTagClick: { type: String, attribute: 'on-nav-tag-click' },
 
       // API Server
       apiKeyName: { type: String, attribute: 'api-key-name' },
@@ -170,7 +172,7 @@ export default class RapiDoc extends LitElement {
       }
 
       .main-content-inner--view-mode {
-        padding: 0 16px;
+        padding: 0 8px;
       }
       .main-content::-webkit-scrollbar {
         width: 8px;
@@ -329,13 +331,13 @@ export default class RapiDoc extends LitElement {
           display:flex;
         }
         .section-gap { 
-          padding: 0 24px; 
+          padding: 0 0 0 24px; 
         }
         .section-gap--focused-mode {
-          padding: 24px; 
+          padding: 24px 8px; 
         }
         .section-gap--read-mode { 
-          padding: 48px 24px 24px 24px; 
+          padding: 24px 8px; 
         }
         .endpoint-body {
           position: relative;
@@ -343,16 +345,16 @@ export default class RapiDoc extends LitElement {
         }
       }
 
-      @media only screen and (min-width: 1000px) {
+      @media only screen and (min-width: 1024px) {
         .nav-bar {
           width: ${unsafeCSS(this.fontSize === 'default' ? '300px' : this.fontSize === 'large' ? '315px' : '330px')};
           display:flex;
         }
         .section-gap--focused-mode { 
-          padding: 12px 100px 12px 100px; 
+          padding: 12px 80px 12px 80px; 
         }
         .section-gap--read-mode { 
-          padding: 24px 100px 12px 100px; 
+          padding: 24px 80px 12px 80px; 
         }
       }`,
       CustomStyles,

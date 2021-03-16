@@ -221,6 +221,9 @@ export default class ApiRequest extends LitElement {
         continue;
       }
       const paramSchema = getTypeInfo(param.schema);
+      if (!paramSchema) {
+        continue;
+      }
       let exampleVal = '';
       let exampleList = [];
       let paramStyle = 'form';
@@ -1216,13 +1219,16 @@ export default class ApiRequest extends LitElement {
       const tryResp = await fetch(fetchUrl, fetchOptions);
       tryBtnEl.disabled = false;
       me.responseStatus = tryResp.ok ? 'success' : 'error';
-      me.responseMessage = `${tryResp.statusText}:${tryResp.status}`;
+      me.responseMessage = tryResp.statusText ? `${tryResp.statusText}:${tryResp.status}` : tryResp.status;
       me.responseUrl = tryResp.url;
       tryResp.headers.forEach((hdrVal, hdr) => {
         me.responseHeaders = `${me.responseHeaders}${hdr.trim()}: ${hdrVal}\n`;
       });
       const contentType = tryResp.headers.get('content-type');
-      if (contentType) {
+      const respEmpty = (await tryResp.clone().text()).length === 0;
+      if (respEmpty) {
+        me.responseText = '';
+      } else if (contentType) {
         if (contentType.includes('json')) {
           if ((/charset=[^"']+/).test(contentType)) {
             const encoding = contentType.split('charset=')[1];

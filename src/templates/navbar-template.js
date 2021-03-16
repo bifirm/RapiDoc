@@ -121,7 +121,7 @@ export default function navbarTemplate() {
             : ''
           }  
         </div>
-        <div class='nav-bar-section-title'> OPERATIONS</div>
+        <div class='nav-bar-section-title'> OPERATIONS </div>
       </div>
 
       <!-- TAGS AND PATHS-->
@@ -192,6 +192,7 @@ export default function navbarTemplate() {
                     ? html`<span class='mono-font'>${p.method.toUpperCase()} ${p.path}</span>`
                     : p.summary || p.shortSummary
                   }
+                  ${p.isWebhook ? '(Webhook)' : ''}
                 </span>
               </div>`)}
             </div>
@@ -229,27 +230,33 @@ export default function navbarTemplate() {
         )}    
       `:''}
 
-    <!-- COMPONENTS -->
-    ${(this.showComponents === 'false' || !this.resolvedSpec.components)
-    ? ''
-    : html`
-      <div id='link-components' class='nav-bar-section'>
-        <div></div>
-        <div class='nav-bar-section-title'>COMPONENTS</div>
-      </div>
-      ${this.resolvedSpec.components.map((component) => (component.subComponents.length ? html`
-        <div class='nav-bar-tag' data-content-id='cmp--${component.name.toLowerCase()}' id='link-cmp--${component.name.toLowerCase()}' @click='${(e) => this.scrollToEventTarget(e, false)}'>
-          ${component.name}
-        </div>
-        ${component.subComponents.map((p) => html`
-        <div class='nav-bar-path' data-content-id='cmp--${p.id}' id='link-cmp--${p.id}' @click='${(e) => this.scrollToEventTarget(e, false)}'>
-          <span> ${p.name} </span>
-        </div>`)}
-      ` : ''))}
-    `}
+      <!-- COMPONENTS -->
+      ${this.resolvedSpec.components && this.showComponents === 'true'
+        ? html`
+          <div id='link-components' class='nav-bar-section'>
+            <div></div>
+            <div class='nav-bar-section-title'>COMPONENTS</div>
+          </div>
+          ${this.resolvedSpec.components.map((component) => (component.subComponents.length
+            ? html`
+              <div class='nav-bar-tag' 
+                data-content-id='cmp--${component.name.toLowerCase()}' 
+                id='link-cmp--${component.name.toLowerCase()}' 
+                @click='${(e) => this.scrollToEventTarget(e, false)}'>
+                ${component.name}
+              </div>
+              ${component.subComponents.map((p) => html`
+                <div class='nav-bar-path' data-content-id='cmp--${p.id}' id='link-cmp--${p.id}' @click='${(e) => this.scrollToEventTarget(e, false)}'>
+                  <span> ${p.name} </span>
+                </div>`)
+              }`
+            : ''))
+          }`
+        : ''
+      }
     </nav>`
   }
-  </nav>
+</nav>
 `;
 }
 /* eslint-enable indent */

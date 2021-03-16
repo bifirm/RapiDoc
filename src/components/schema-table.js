@@ -51,7 +51,7 @@ export default class SchemaTable extends LitElement {
 
       .table .key-type {
         white-space: normal;
-        width: 85px;
+        width: 150px;
       }
       .collapsed-descr .tr {
         max-height: calc(var(--font-size-small) + var(--font-size-small) + 4px);
@@ -96,11 +96,11 @@ export default class SchemaTable extends LitElement {
             <span class="schema-root-type ${this.data?.['::type'] || ''} " > ${this.data?.['::type'] || ''}</span> 
             <span class='m-markdown' >${this.data ? unsafeHTML(marked(this.data['::description'] || '')) : ''}</span>
           </div>
-          <div style = "border:1px solid var(--light-border-color)">
-            <div style='display:flex; height:calc(var(--font-size-small) + 6px); background-color: var(--bg2); line-height:calc(var(--font-size-small) + 6px); padding:8px 2px; border-bottom:1px solid var(--light-border-color);'>
-              <div class='td key' style='font-family:var(--font-regular); font-weight:bold; color:var(--fg)'> Field</div>
-              <div class='td key-type' style='font-family:var(--font-regular); font-weight:bold; color:var(--fg)'> Type </div>
-              <div class='td key-descr' style='font-family:var(--font-regular); font-weight:bold; color:var(--fg)'>Description</div>
+          <div style = 'border:1px solid var(--light-border-color)'>
+            <div style='display:flex; background-color: var(--bg2); padding:8px 4px; border-bottom:1px solid var(--light-border-color);'>
+              <div class='key' style='font-family:var(--font-regular); font-weight:bold; color:var(--fg);'> Field </div>
+              <div class='key-type' style='font-family:var(--font-regular); font-weight:bold; color:var(--fg);'> Type </div>
+              <div class='key-descr' style='font-family:var(--font-regular); font-weight:bold; color:var(--fg);'> Description </div>
             </div>
             ${this.data
               ? html`
@@ -116,7 +116,19 @@ export default class SchemaTable extends LitElement {
   }
 
   generateTree(data, dataType = 'object', key = '', description = '', level = 0) {
-    const leftPadding = 16 * level; // 2 space indentation at each level
+    /*
+    if ((data['::type'] || '').includes('xxx-of-option') || key.startsWith('::OPTION')) {
+      level -= 1;
+    }
+    */
+    if (key.startsWith('::OPTION')) {
+      level -= 1;
+    }
+    let leftPadding = 16 * level; // 2 space indentation at each level
+    if (key.startsWith('::OPTION')) {
+      leftPadding -= 6;
+    }
+
     if (!data) {
       return html`<div class="null" style="display:inline;">null</div>`;
     }
@@ -158,7 +170,7 @@ export default class SchemaTable extends LitElement {
           ? html`
             <div class='tr ${level < this.schemaExpandLevel ? 'expanded' : 'collapsed'} ${data['::type']}' data-obj='${keyLabel}'>
               <div class="td key ${data['::deprecated'] ? 'deprecated' : ''}" style='padding-left:${leftPadding}px'>
-                ${keyLabel || keyDescr
+                ${(keyLabel || keyDescr) && (data['::type'] || '').includes('xxx-of-option') === false
                   ? html`
                     <span 
                       class='obj-toggle ${level < this.schemaExpandLevel ? 'expanded' : 'collapsed'}'
@@ -225,7 +237,7 @@ export default class SchemaTable extends LitElement {
     if (readorWriteOnly === '🆆' && this.schemaHideWriteOnly === 'true') {
       return;
     }
-    const dataTypeCss = type.replace('{', '').substring(0, 4).toLowerCase();
+    const dataTypeCss = type.replace(/┃.*/g, '').replace(/[^a-zA-Z0-9+]/g, '').substring(0, 4).toLowerCase();
     return html`
       <div class = "tr primitive">
         <div class="td key ${deprecated}" style='padding-left:${leftPadding}px' >
@@ -241,10 +253,10 @@ export default class SchemaTable extends LitElement {
           <span style="font-family: var(--font-mono);">${readorWriteOnly} </span> </div>
         <div class='td key-descr'>
           ${dataType === 'array' ? description : ''}
-          ${constraint ? html`<div style='color: var(--fg2); padding-bottom:3px;'>${allowedValues}</div>` : ''}
-          ${defaultValue ? html`<div style='color: var(--fg2); padding-bottom:3px;' ><span class='bold-text'>Default:</span> ${defaultValue}</div>` : ''}
-          ${allowedValues ? html`<div style='color: var(--fg2); padding-bottom:3px;'><span class='bold-text'>Allowed: </span> &nbsp; ${allowedValues}</div>` : ''}
-          ${pattern ? html`<div style='color: var(--fg2); padding-bottom:3px;'><span class='bold-text'>Pattern:</span>  &nbsp; ${pattern}</div>` : ''}
+          ${constraint ? html`<div style='display:inline-block; line-break:anywhere; margin-right:8px;'> <span class='bold-text'>Constraints: </span> ${constraint}</div>` : ''}
+          ${defaultValue ? html`<div style='display:inline-block; line-break:anywhere; margin-right:8px;'> <span class='bold-text'>Default: </span>${defaultValue}</div>` : ''}
+          ${allowedValues ? html`<div style='display:inline-block; line-break:anywhere; margin-right:8px;'> <span class='bold-text'>Allowed: </span>${allowedValues}</div>` : ''}
+          ${pattern ? html`<div style='display:inline-block; line-break:anywhere; margin-right:8px;'> <span class='bold-text'>Pattern: </span>${pattern}</div>` : ''}
           ${schemaDescription ? html`<span class="m-markdown-small">${unsafeHTML(marked(schemaDescription))}</span>` : ''}
         </div>
       </div>

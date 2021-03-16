@@ -16,33 +16,26 @@
     <script type='module' src='../rapidoc-min.js'></script>
   </head>
   <body>
-    <rapi-doc spec-url="../specs/schema.yaml"
+    <rapi-doc
       id = "thedoc"
+      spec-url="../specs/multi-datatypes-test.yaml" 
       allow-authentication = "false" 
-      allow-search = "false"
-      show-info = "false"
+      show-info = "true"
       show-header = "false"
+      allow-server-selection = "false"
       render-style = "read"
-      allow-try = "false" 
+      schema-style = "tree"
+      allow-try = "true" 
       regular-font = 'Open Sans'
       mono-font = "Roboto Mono"
-      theme = "dark"
-      schema-style='table'
     > 
       <div slot="nav-logo" style="width:100%; display: flex; flex-direction:column;">
-        <div style="text-align: center; padding: 0 0 12px 0; color:#47AFE8"> Schema Display Style </div>
-        <div style="display: flex;justify-content: center; margin: 2px 0">
+        <div style="display: flex;justify-content:center; align-items:center; margin:2px 0">
+          <span> Schema Style</span>
           <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('schema-style', 'tree')" >Tree</button>
           <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('schema-style', 'table')" >Table</button>
         </div>
-
-        <div style="text-align: center; padding: 20px 0 12px 0; color:#47AFE8"> Font Size </div>
-        <div style="display: flex;justify-content: center; margin: 2px 0"">
-          <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('font-size', 'default')" >Default</button>
-          <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('font-size', 'large')" >Large</button>
-          <button class='btn medium' onclick="document.getElementById('thedoc').setAttribute('font-size', 'largest')" >Largest</button>
-        </div>
-      </div>
-  </rapi-doc>
+      </div>  
+    </rapi-doc>
   </body>
 </html>
